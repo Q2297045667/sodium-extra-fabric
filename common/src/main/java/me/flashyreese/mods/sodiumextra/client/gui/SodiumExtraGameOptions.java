@@ -5,11 +5,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import me.flashyreese.mods.sodiumextra.client.SodiumExtraClientMod;
+import me.flashyreese.mods.sodiumextra.common.util.ResourceLocationSerializer;
 import net.caffeinemc.mods.sodium.client.gui.options.TextProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.material.FogType;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
@@ -18,11 +19,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.Map;
 
 public class SodiumExtraGameOptions {
     private static final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(ResourceLocation.class, new ResourceLocation.Serializer())
+            .registerTypeAdapter(ResourceLocation.class, new ResourceLocationSerializer())
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
@@ -192,11 +194,8 @@ public class SodiumExtraGameOptions {
     }
 
     public static class RenderSettings {
-        public int fogDistance;
-        public int fogStart;
-        public boolean multiDimensionFogControl;
-        @SerializedName("dimensionFogDistance")
-        public Map<ResourceLocation, Integer> dimensionFogDistanceMap;
+        public boolean globalFog;
+        public EnumMap<FogType, FogTypeConfig> fogTypeConfig;
         public boolean lightUpdates;
         public boolean itemFrame;
         public boolean armorStand;
@@ -209,10 +208,8 @@ public class SodiumExtraGameOptions {
         public boolean playerNameTag;
 
         public RenderSettings() {
-            this.fogDistance = 0;
-            this.fogStart = 100;
-            this.multiDimensionFogControl = false;
-            this.dimensionFogDistanceMap = new Object2IntArrayMap<>();
+            this.globalFog = true;
+            this.fogTypeConfig = new EnumMap<>(FogType.class);
             this.lightUpdates = true;
             this.itemFrame = true;
             this.armorStand = true;
@@ -223,7 +220,17 @@ public class SodiumExtraGameOptions {
             this.enchantingTableBook = true;
             this.itemFrameNameTag = true;
             this.playerNameTag = true;
+
+            this.ensureFogTypeDefaults();
         }
+
+        public void ensureFogTypeDefaults() {
+            for (FogType type : FogType.values()) {
+                if (type == FogType.NONE) continue;
+                this.fogTypeConfig.putIfAbsent(type, new FogTypeConfig());
+            }
+        }
+
     }
 
     public static class ExtraSettings {
